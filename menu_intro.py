@@ -18,7 +18,7 @@ AFTER_BG_DELAY = 2.0
 BUTTON_STAGGER = 0.35
 BUTTON_ANIM_TIME = 1.8
 
-BUTTON_GAP_Y = 90
+BUTTON_GAP_Y = 160
 BUTTON_BASE_Y = 260
 BUTTON_RISE_OFFSET = 40
 
@@ -52,24 +52,56 @@ def ease_out_cubic(x: float) -> float:
 
 class ButtonVisual:
     def __init__(self, texture: arcade.Texture, x: float, final_y: float, anim: TimedAnim):
-        # Create sprite with given texture
         self.sprite = arcade.Sprite(texture)
         self.sprite.center_x = x
+
         self.final_y = final_y
         self.anim = anim
 
+        # --- Hover state/animation ---
+        self.hover_offset = 12  # quanto sobe no hover
+        self.hover = False
+        self.current_y = final_y
+
+        # Controle de transição suave de hover
+        self.hover_t = 0.0          # 0 = sem hover, 1 = hover total
+        self.hover_speed = 6.0      # velocidade (fração por segundo) da transição
+
+        # posição inicial para animação principal (intro)
         self.sprite.center_y = self.final_y - BUTTON_RISE_OFFSET
         self.sprite.alpha = 0
-
         self.sprite.color = (240, 240, 240)
 
-    def update(self, t: float) -> None:
+    def update(self, t: float, dt: float) -> None:
+        # Animação de entrada (intro)
         p = self.anim.progress(t)
         e = ease_out_cubic(p)
+        base_y = self.final_y - (1.0 - e) * BUTTON_RISE_OFFSET
 
-        # Rise up and fade in
-        self.sprite.center_y = self.final_y - (1.0 - e) * BUTTON_RISE_OFFSET
-        self.sprite.alpha = int(max(0, min(255, 255 * e)))
+        # Atualiza transição de hover usando tempo real (independente de fps)
+        target_hover = 1.0 if self.hover else 0.0
+        # move hover_t em direção ao alvo
+        # move hover_t em direção ao alvo
+        if self.hover_t < target_hover:
+            self.hover_t = min(target_hover, self.hover_t + self.hover_speed * dt)
+        elif self.hover_t > target_hover:
+            self.hover_t = max(target_hover, self.hover_t - self.hover_speed * dt)
+
+
+        # easing para o deslocamento de hover
+        hover_eased = ease_out_cubic(self.hover_t)
+        hover_y = hover_eased * self.hover_offset
+
+        # posição final combinando intro + hover suave
+        self.current_y = base_y + hover_y
+        self.sprite.center_y = self.current_y
+
+        # Fade inicial
+        self.sprite.alpha = int(255 * e)
+
+    def set_hover(self, is_hovered: bool) -> None:
+        # Apenas ajusta o estado desejado; a animação em si ocorre em update
+        self.hover = is_hovered
 
 
 class MenuIntroView(arcade.View):
@@ -152,9 +184,9 @@ class MenuIntroView(arcade.View):
             except:
                 pass
 
-        # Update dos botões
+        # Update dos botões (usa dt para hover suave)
         for btn in self.buttons:
-            btn.update(self.time)
+            btn.update(self.time, delta_time)
 
 
     def on_draw(self):
@@ -164,11 +196,19 @@ class MenuIntroView(arcade.View):
 
     def on_mouse_motion(self, x, y, dx, dy):
         for btn in self.buttons:
-            if btn.sprite.alpha >= 250 and abs(btn.sprite.center_y - btn.final_y) < 0.5:
-                if btn.sprite.left <= x <= btn.sprite.right and btn.sprite.bottom <= y <= btn.sprite.top:
-                    btn.sprite.color = (255, 255, 255)
-                else:
-                    btn.sprite.color = (240, 240, 240)
+            cx = btn.sprite.center_x
+            fy = btn.final_y  # posição fixa, não animada!
+            half_w = btn.sprite.width / 2
+            half_h = btn.sprite.height / 2
+
+            hovered = (cx - half_w <= x <= cx + half_w and
+                    fy - half_h <= y <= fy + half_h)
+
+            intro_done = (btn.sprite.alpha >= 250)
+
+            btn.set_hover(hovered and intro_done)
+            btn.sprite.color = (255, 255, 255) if (hovered and intro_done) else (240, 240, 240)
+
 
 
     def on_mouse_press(self, x, y, button, modifiers):
