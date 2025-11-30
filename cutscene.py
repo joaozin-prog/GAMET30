@@ -52,15 +52,22 @@ DIALOG_TEXT_X = 100                         # adjust X of dialog text (pixels)
 DIALOG_TEXT_Y = 250                          # adjust Y of dialog text (pixels)
 DIALOG_TEXT_FONT_SIZE = 18                  # font size for dialog body
 
-# Skip button position (you can change these to reposition the button)
 SKIP_BUTTON_X = 1150
 SKIP_BUTTON_Y = 120
 
 # Texts shown each time the player clicks Skip (create as many as you need)
 SKIP_TEXTS = [
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod",
-    "tempor incididunt ut labore et dolore magna aliqua.",
-    "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris."
+    "Bem-vindo ao Instituto Federal Farroupilha.",
+    "Seu projeto foi avaliada e aprovada. Não haverá segunda chance nem fase de adaptação.",
+    "A missão terá início assim que a noite apagar o último resquício de luz.\nA partir desse momento, você estará por conta própria.",
+    "O protocolo, apesar do que alguns dizem, não é complexo.",
+    "O campus oculta objetos que desapareceram durante o dia.",
+    "Deslocados, abandonados, ou simplesmente atraídos para lugares onde não deveriam estar.",
+    "Sua tarefa é localizar todos eles. Não deixe que a escuridão o distraia.",
+    "A operação será encerrada apenas quando todos os itens forem recuperados.\nNão importa o que veja, o que escute ou o que julgue sentir atrás de você.",
+    "Não interrompa o processo. Não compartilhe informações.",
+    "Os alvos identificados para esta sessão são: Item1, Item2, Item3, Item4 e Item5.\nCada objeto carrega vestígios do que aconteceu antes que você chegasse.",
+    "Bom, eu vou indo. Conto com você"
 ]
 
 
