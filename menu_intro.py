@@ -234,7 +234,6 @@ class MenuIntroView(arcade.View):
                 if labels[i] == "quit":
                     arcade.close_window()
                 elif labels[i] == "play":
-                    # Importa e inicia a cutscene
                     from cutscene import CutsceneView
                     cutscene = CutsceneView()
                     cutscene.setup(self.music_player)

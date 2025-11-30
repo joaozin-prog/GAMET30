@@ -38,10 +38,18 @@ class CutsceneView(arcade.View):
         self.bg_sprite.center_x = SCREEN_WIDTH // 2
         self.bg_sprite.center_y = SCREEN_HEIGHT // 2
 
+        # Use a SpriteList for drawing (some arcade versions require SpriteList.draw())
+        self.bg_list = arcade.SpriteList()
+        self.bg_list.append(self.bg_sprite)
+
         self.black_sprite = arcade.Sprite(BLACK_SCREEN_IMG)
         self.black_sprite.center_x = SCREEN_WIDTH // 2
         self.black_sprite.center_y = SCREEN_HEIGHT // 2
         self.black_sprite.alpha = 0
+
+        # Use a SpriteList for the black sprite as well
+        self.black_list = arcade.SpriteList()
+        self.black_list.append(self.black_sprite)
 
         # Som (players)
         self.menu_music_player = None
@@ -78,12 +86,7 @@ class CutsceneView(arcade.View):
                 self.state = self.STATE_HOLD
                 self.time = 0
 
-        # -----------------------------------
-        # ESTADO 2 — Tela preta (sons)
-        # -----------------------------------
         elif self.state == self.STATE_HOLD:
-
-            # 1x sons de passos no começo
             if not self.sfx_played:
                 try:
                     arcade.Sound(FOOTSTEPS_SOUND).play(volume=1.0)
@@ -108,17 +111,11 @@ class CutsceneView(arcade.View):
             if self.time >= BLACKSCREEN_HOLD:
                 self.state = self.STATE_FADE_FROM_BLACK
                 self.time = 0
-
-        # -----------------------------------
-        # ESTADO 3 — Revealação (fade out da tela preta)
-        # -----------------------------------
         elif self.state == self.STATE_FADE_FROM_BLACK:
             p = min(self.time / FADE_OUT_TIME, 1)
 
-            # Alpha de 255 → 0
             self.black_sprite.alpha = int(255 * (1 - p))
 
-            # Música da fase
             if self.theme_player is None:
                 try:
                     snd = arcade.Sound(THEME_SOUND, streaming=True)
@@ -142,8 +139,9 @@ class CutsceneView(arcade.View):
     def on_draw(self):
         self.clear()
 
-        # Enquanto está no último estado, mostre o BG da fase
         if self.state == self.STATE_FADE_FROM_BLACK:
-            self.bg_sprite.draw()
+            # draw background via its SpriteList
+            self.bg_list.draw()
 
-        self.black_sprite.draw()
+        # draw black overlay via its SpriteList
+        self.black_list.draw()
