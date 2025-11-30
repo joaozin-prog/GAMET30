@@ -147,7 +147,6 @@ class MenuIntroView(arcade.View):
         self.black_sprite.alpha = 255
         self.ui_list.append(self.black_sprite)
 
-        # Adiciona o título à lista de UI
         self.ui_list.append(self.title_sprite)
 
         start_buttons = FADE_IN_TIME + AFTER_BG_DELAY

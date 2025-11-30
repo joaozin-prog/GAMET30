@@ -17,9 +17,51 @@ SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 
 FADE_TIME = 2.0
-BLACKSCREEN_HOLD = 15.0
+BLACKSCREEN_HOLD = 7.0
 FADE_SOUNDS_TIME = 2.0
 FADE_OUT_TIME = 2.0
+
+# ------------------------------------------------------------------------------------- #
+
+# New assets & timing for character/dialog entrance
+DANIEL_IMG = os.path.join(ASSETS_DIR, "daniel.png")
+DIALOG_BOX_IMG = os.path.join(ASSETS_DIR, "dialog_box", "dialog_box4.png")
+SKIP_BUTTON_IMG = os.path.join(ASSETS_DIR, "skip_button.png")
+VOICELINE_SOUND = os.path.join(SOUNDS_DIR, "voiceline.mp3")
+
+DANIEL_ENTRANCE_DELAY = 1.5        # seconds after black screen fully disappears
+ENTRANCE_DURATION = 1.2            # duration of slide-in animations
+DANIEL_FINAL_MARGIN = 2           # px from right edge
+DIALOG_BOTTOM_MARGIN = -460           # px above bottom edge (reduced so box sits lower)
+
+# Wait after dialog fully appeared before enabling text & skip button
+DIALOG_POST_APPEAR_DELAY = 2.0  # seconds
+
+# Typewriter / dialog configuration (you can tweak these)
+LETTER_INTERVAL_MS = 50                     # milliseconds per letter (variable you can adjust)
+
+# Dialog title properties
+DIALOG_TITLE = "Daniel Temp"
+DIALOG_TITLE_X = 160                        # adjust X of title text (pixels)
+DIALOG_TITLE_Y = 320                        # adjust Y of title text (pixels)
+DIALOG_TITLE_FONT_SIZE = 28                 # font size for title
+
+# Dialog body properties - Texto
+
+DIALOG_TEXT_X = 100                         # adjust X of dialog text (pixels)
+DIALOG_TEXT_Y = 250                          # adjust Y of dialog text (pixels)
+DIALOG_TEXT_FONT_SIZE = 18                  # font size for dialog body
+
+# Skip button position (you can change these to reposition the button)
+SKIP_BUTTON_X = 1200
+SKIP_BUTTON_Y = 110
+
+# Texts shown each time the player clicks Skip (create as many as you need)
+SKIP_TEXTS = [
+    "Oi. Estou aqui para ajudar.",
+    "Você ouviu? O vento está estranho hoje.",
+    "Vamos seguir em frente, fique atento."
+]
 
 
 class CutsceneView(arcade.View):
@@ -28,17 +70,19 @@ class CutsceneView(arcade.View):
     STATE_HOLD = 1
     STATE_FADE_FROM_BLACK = 2
 
+    STATE_WAIT_FOR_DANIEL = 3
+    STATE_DANIEL_ENTRANCE = 4
+    STATE_PRESENT_COMPLETE = 5
+
     def __init__(self):
         super().__init__()
         self.time = 0
         self.state = self.STATE_FADE_TO_BLACK
 
-        # SPRITES (muito importante!)
         self.bg_sprite = arcade.Sprite(ENTRADA_INFO_IMG)
         self.bg_sprite.center_x = SCREEN_WIDTH // 2
         self.bg_sprite.center_y = SCREEN_HEIGHT // 2
 
-        # Use a SpriteList for drawing (some arcade versions require SpriteList.draw())
         self.bg_list = arcade.SpriteList()
         self.bg_list.append(self.bg_sprite)
 
@@ -51,7 +95,38 @@ class CutsceneView(arcade.View):
         self.black_list = arcade.SpriteList()
         self.black_list.append(self.black_sprite)
 
-        # Som (players)
+        # Daniel / dialog placeholders + lists (created when entrance starts)
+        self.daniel_sprite = None
+        self.daniel_list = arcade.SpriteList()
+        self.dialog_sprite = None
+        self.dialog_list = arcade.SpriteList()
+
+        # Skip button sprite/list
+        self.skip_sprite = None
+        self.skip_list = arcade.SpriteList()
+
+        # Typewriter / dialog runtime state
+        self._letter_interval = LETTER_INTERVAL_MS / 1000.0   # seconds
+        self._current_text_index = 0
+        self._full_text = ""
+        self._visible_text = ""
+        self._type_accum = 0.0
+        self._type_pos = 0
+        self._typing = False
+        self._voiceline_sound = None
+
+        # Post-appearance timer and flag: wait before enabling dialog interaction
+        self._post_dialog_timer = 0.0
+        self._dialog_interactable = False
+
+        # Entrance geometry (filled when sprites are created)
+        self._daniel_start_x = None
+        self._daniel_target_x = None
+        self._daniel_start_y = None
+        self._daniel_target_y = None
+        self._dialog_start_y = None
+        self._dialog_target_y = None
+
         self.menu_music_player = None
         self.cricket_player = None
         self.wind_player = None
@@ -60,10 +135,20 @@ class CutsceneView(arcade.View):
         self.sfx_played = False
 
     def setup(self, menu_music_player):
-        # Referência para a música do menu
         self.menu_music_player = menu_music_player
 
     def on_update(self, dt):
+        # load voiceline lazily so missing file doesn't break everything
+        if self._voiceline_sound is None:
+            try:
+                self._voiceline_sound = arcade.Sound(VOICELINE_SOUND)
+            except Exception:
+                self._voiceline_sound = None
+
+        # simple cubic ease-out
+        def ease_out_cubic(t):
+            return 1 - pow(1 - t, 3)
+
         self.time += dt
 
         # -----------------------------------
@@ -129,19 +214,180 @@ class CutsceneView(arcade.View):
                     pass
 
             if p >= 1:
-                print("Cutscene terminou — avance para a fase 1 aqui")
-                # aqui você troca de view
-                # ex:
-                # from phase1 import Phase1View
-                # self.window.show_view(Phase1View())
-                pass
+                # Black screen fully gone: start waiting before Daniel entrance
+                self.state = self.STATE_WAIT_FOR_DANIEL
+                self.time = 0
+
+        elif self.state == self.STATE_WAIT_FOR_DANIEL:
+            # wait DANIEL_ENTRANCE_DELAY seconds, then create sprites off-screen and start entrance
+            if self.time >= DANIEL_ENTRANCE_DELAY:
+                # Create Daniel sprite
+                try:
+                    self.daniel_sprite = arcade.Sprite(DANIEL_IMG)
+                    # final Y around lower-right quadrant
+                    final_y = int(SCREEN_HEIGHT * 0.35)
+                    # initial X off-screen right
+                    start_x = SCREEN_WIDTH + (self.daniel_sprite.width / 2) + 50
+                    target_x = SCREEN_WIDTH - (self.daniel_sprite.width / 2) - DANIEL_FINAL_MARGIN
+                    self.daniel_sprite.center_x = start_x
+                    self.daniel_sprite.center_y = final_y
+                    self.daniel_list.append(self.daniel_sprite)
+                    # store geometry
+                    self._daniel_start_x = start_x
+                    self._daniel_target_x = target_x
+                    self._daniel_start_y = final_y
+                    self._daniel_target_y = final_y
+                except Exception:
+                    # If sprite loading fails, skip entrance but continue
+                    self.daniel_sprite = None
+
+                # Create dialogue box sprite (slide from bottom to bottom)
+                try:
+                    self.dialog_sprite = arcade.Sprite(DIALOG_BOX_IMG)
+                    dialog_target_y = (self.dialog_sprite.height / 2) + DIALOG_BOTTOM_MARGIN
+                    dialog_start_y = - (self.dialog_sprite.height / 2) - 50
+                    self.dialog_sprite.center_x = SCREEN_WIDTH // 2
+                    self.dialog_sprite.center_y = dialog_start_y
+                    self.dialog_list.append(self.dialog_sprite)
+                    self._dialog_start_y = dialog_start_y
+                    self._dialog_target_y = dialog_target_y
+                except Exception:
+                    self.dialog_sprite = None
+
+                # start entrance animation
+                self.state = self.STATE_DANIEL_ENTRANCE
+                self.time = 0
+
+        elif self.state == self.STATE_DANIEL_ENTRANCE:
+            t = min(self.time / ENTRANCE_DURATION, 1.0)
+            eased = ease_out_cubic(t)
+
+            # Update Daniel X position
+            if self.daniel_sprite and self._daniel_start_x is not None:
+                new_x = self._daniel_start_x + (self._daniel_target_x - self._daniel_start_x) * eased
+                self.daniel_sprite.center_x = new_x
+
+            # Update dialog Y position
+            if self.dialog_sprite and self._dialog_start_y is not None:
+                new_y = self._dialog_start_y + (self._dialog_target_y - self._dialog_start_y) * eased
+                self.dialog_sprite.center_y = new_y
+
+            if t >= 1.0:
+                self.state = self.STATE_PRESENT_COMPLETE
+                self.time = 0
+                # Do NOT start typing or create skip button yet.
+                # We'll wait DIALOG_POST_APPEAR_DELAY seconds before enabling dialog interaction.
+
+        # Typewriter update (works while in PRESENT_COMPLETE or other states if needed)
+        if self._typing:
+            self._type_accum += dt
+            # reveal letters at the configured interval
+            while self._type_accum >= self._letter_interval and self._type_pos < len(self._full_text):
+                self._type_accum -= self._letter_interval
+                # advance one letter
+                self._type_pos += 1
+                self._visible_text = self._full_text[: self._type_pos]
+                # play voiceline per-letter (if available)
+                try:
+                    if self._voiceline_sound:
+                        # short play for each letter; use low volume
+                        self._voiceline_sound.play(volume=0.6)
+                except Exception:
+                    pass
+            # finished typing
+            if self._type_pos >= len(self._full_text):
+                self._typing = False
+                self._type_accum = 0.0
+
+        # After the dialog/character are presented, wait a bit then enable interaction:
+        if self.state == self.STATE_PRESENT_COMPLETE and not self._dialog_interactable:
+            self._post_dialog_timer += dt
+            if self._post_dialog_timer >= DIALOG_POST_APPEAR_DELAY:
+                # create skip button now (so it appears after the delay)
+                try:
+                    self.skip_sprite = arcade.Sprite(SKIP_BUTTON_IMG)
+                    self.skip_sprite.center_x = SKIP_BUTTON_X
+                    self.skip_sprite.center_y = SKIP_BUTTON_Y
+                    self.skip_list.append(self.skip_sprite)
+                except Exception:
+                    self.skip_sprite = None
+
+                # start typing first text automatically when interactable
+                if len(SKIP_TEXTS) > 0:
+                    self._current_text_index = 0
+                    self._start_typing(SKIP_TEXTS[self._current_text_index])
+
+                self._dialog_interactable = True
 
     def on_draw(self):
         self.clear()
 
-        if self.state == self.STATE_FADE_FROM_BLACK:
-            # draw background via its SpriteList
+        # Draw background once we are revealing it and afterwards
+        if self.state >= self.STATE_FADE_FROM_BLACK:
             self.bg_list.draw()
 
         # draw black overlay via its SpriteList
         self.black_list.draw()
+
+        # draw Daniel and dialog if present
+        if len(self.daniel_list) > 0:
+            self.daniel_list.draw()
+        if len(self.dialog_list) > 0:
+            self.dialog_list.draw()
+
+        # Draw dialog title & body text (typewriter visible text)
+        if self.dialog_sprite is not None:
+            try:
+                arcade.draw_text(
+                    DIALOG_TITLE,
+                    DIALOG_TITLE_X,
+                    DIALOG_TITLE_Y,
+                    arcade.color.WHITE,
+                    DIALOG_TITLE_FONT_SIZE,
+                    anchor_x="left",
+                )
+                arcade.draw_text(
+                    self._visible_text,
+                    DIALOG_TEXT_X,
+                    DIALOG_TEXT_Y,
+                    arcade.color.WHITE,
+                    DIALOG_TEXT_FONT_SIZE,
+                    multiline=True,
+                    width=SCREEN_WIDTH - (DIALOG_TEXT_X + 40),
+                    anchor_x="left",
+                )
+            except Exception:
+                pass
+
+        # draw skip button if present
+        if len(self.skip_list) > 0:
+            self.skip_list.draw()
+
+    # helper to start typing a text
+    def _start_typing(self, full_text: str):
+        self._full_text = full_text
+        self._visible_text = ""
+        self._type_pos = 0
+        self._type_accum = 0.0
+        self._typing = True
+
+    def on_mouse_press(self, x: float, y: float, button: int, modifiers: int):
+        # If skip sprite exists, check click
+        try:
+            if self.skip_sprite and self.skip_sprite.collides_with_point((x, y)):
+                # If typing in progress, finish current text immediately
+                if self._typing:
+                    self._typing = False
+                    self._visible_text = self._full_text
+                    self._type_pos = len(self._full_text)
+                    return
+                # If current text fully shown, advance to next text (if any)
+                next_index = self._current_text_index + 1
+                if next_index < len(SKIP_TEXTS):
+                    self._current_text_index = next_index
+                    self._start_typing(SKIP_TEXTS[self._current_text_index])
+                else:
+                    # no more texts: do nothing or you can implement closing dialog / continue
+                    pass
+        except Exception:
+            pass
