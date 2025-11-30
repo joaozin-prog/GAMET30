@@ -53,14 +53,14 @@ DIALOG_TEXT_Y = 250                          # adjust Y of dialog text (pixels)
 DIALOG_TEXT_FONT_SIZE = 18                  # font size for dialog body
 
 # Skip button position (you can change these to reposition the button)
-SKIP_BUTTON_X = 1200
-SKIP_BUTTON_Y = 110
+SKIP_BUTTON_X = 1150
+SKIP_BUTTON_Y = 120
 
 # Texts shown each time the player clicks Skip (create as many as you need)
 SKIP_TEXTS = [
-    "Oi. Estou aqui para ajudar.",
-    "Você ouviu? O vento está estranho hoje.",
-    "Vamos seguir em frente, fique atento."
+    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod",
+    "tempor incididunt ut labore et dolore magna aliqua.",
+    "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris."
 ]
 
 
