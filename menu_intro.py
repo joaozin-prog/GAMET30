@@ -31,7 +31,22 @@ BLACK_SCREEN_IMG = os.path.join(ASSETS_DIR, 'black_screen.png')
 
 PLAY_IMG = os.path.join(MENU_DIR, 'play_button.png')
 QUIT_IMG = os.path.join(MENU_DIR, 'quit_button.png')
+TITLE_IMG = os.path.join(MENU_DIR, 'title.png')
 
+BLACK_SCREEN_IMG = os.path.join(ASSETS_DIR, 'black_screen.png')
+ENTRADA_INFO_IMG = os.path.join(ASSETS_DIR, 'phase1', 'entrada_info.jpeg')
+
+FOOTSTEPS_SOUND = os.path.join(SOUNDS_DIR, 'footsteps_daniel.mp3')
+CRICKET_SOUND = os.path.join(SOUNDS_DIR, 'cricket.mp3')
+WIND_SOUND = os.path.join(SOUNDS_DIR, 'SoftWind.mp3')
+THEME_SOUND = os.path.join(SOUNDS_DIR, 'theme.mp3')
+
+SCREEN_WIDTH = 1280
+SCREEN_HEIGHT = 720
+
+FADE_TIME = 2.0          # fade preto → branco, e depois branco → mapa
+BLACKSCREEN_HOLD = 15.0  # tempo com tela 100% preta antes da revelação
+FADE_SOUNDS_TIME = 2.0   # fade-in para grilos e vento
 
 @dataclass
 class TimedAnim:
@@ -58,49 +73,37 @@ class ButtonVisual:
         self.final_y = final_y
         self.anim = anim
 
-        # --- Hover state/animation ---
-        self.hover_offset = 12  # quanto sobe no hover
+        self.hover_offset = 12
         self.hover = False
         self.current_y = final_y
 
-        # Controle de transição suave de hover
-        self.hover_t = 0.0          # 0 = sem hover, 1 = hover total
-        self.hover_speed = 6.0      # velocidade (fração por segundo) da transição
+        self.hover_t = 0.0
+        self.hover_speed = 6.0
 
-        # posição inicial para animação principal (intro)
         self.sprite.center_y = self.final_y - BUTTON_RISE_OFFSET
         self.sprite.alpha = 0
         self.sprite.color = (240, 240, 240)
 
     def update(self, t: float, dt: float) -> None:
-        # Animação de entrada (intro)
         p = self.anim.progress(t)
         e = ease_out_cubic(p)
         base_y = self.final_y - (1.0 - e) * BUTTON_RISE_OFFSET
 
-        # Atualiza transição de hover usando tempo real (independente de fps)
         target_hover = 1.0 if self.hover else 0.0
-        # move hover_t em direção ao alvo
-        # move hover_t em direção ao alvo
         if self.hover_t < target_hover:
             self.hover_t = min(target_hover, self.hover_t + self.hover_speed * dt)
         elif self.hover_t > target_hover:
             self.hover_t = max(target_hover, self.hover_t - self.hover_speed * dt)
 
-
-        # easing para o deslocamento de hover
         hover_eased = ease_out_cubic(self.hover_t)
         hover_y = hover_eased * self.hover_offset
 
-        # posição final combinando intro + hover suave
         self.current_y = base_y + hover_y
         self.sprite.center_y = self.current_y
 
-        # Fade inicial
         self.sprite.alpha = int(255 * e)
 
     def set_hover(self, is_hovered: bool) -> None:
-        # Apenas ajusta o estado desejado; a animação em si ocorre em update
         self.hover = is_hovered
 
 
@@ -118,24 +121,34 @@ class MenuIntroView(arcade.View):
 
         self.quit_tex = arcade.load_texture(QUIT_IMG)
 
+        # Título
+        self.title_tex = arcade.load_texture(TITLE_IMG)
+        self.title_sprite = arcade.Sprite(self.title_tex)
+        self.title_final_y = SCREEN_HEIGHT - 120  # Ajuste conforme necessário
+        self.title_start_y = SCREEN_HEIGHT + self.title_sprite.height / 2
+        self.title_sprite.center_x = SCREEN_WIDTH / 2
+        self.title_sprite.center_y = self.title_start_y
+        self.title_anim = TimedAnim(start_time=FADE_DELAY + FADE_IN_TIME, duration=BUTTON_ANIM_TIME)
+
     def on_show_view(self):
         arcade.set_background_color(arcade.color.BLACK)
 
         self.bg_list = arcade.SpriteList()
         self.ui_list = arcade.SpriteList()
 
-        # Background
         self.bg_sprite = arcade.Sprite(self.bg_tex)
         self.bg_sprite.center_x = SCREEN_WIDTH / 2
         self.bg_sprite.center_y = SCREEN_HEIGHT / 2
         self.bg_list.append(self.bg_sprite)
 
-        # Black overlay
         self.black_sprite = arcade.Sprite(self.black_tex)
         self.black_sprite.center_x = SCREEN_WIDTH / 2
         self.black_sprite.center_y = SCREEN_HEIGHT / 2
         self.black_sprite.alpha = 255
         self.ui_list.append(self.black_sprite)
+
+        # Adiciona o título à lista de UI
+        self.ui_list.append(self.title_sprite)
 
         start_buttons = FADE_IN_TIME + AFTER_BG_DELAY
         cx = SCREEN_WIDTH / 2
@@ -166,7 +179,6 @@ class MenuIntroView(arcade.View):
     def on_update(self, delta_time: float):
         self.time += delta_time
 
-        # Fade logic
         if self.time < FADE_DELAY:
             fade_p = 0
         else:
@@ -174,17 +186,18 @@ class MenuIntroView(arcade.View):
 
         fade_eased = ease_out_cubic(fade_p)
 
-        # Fade da tela preta
         self.black_sprite.alpha = int(255 * (1 - fade_eased))
 
-        # Fade da música
+        title_p = self.title_anim.progress(self.time)
+        title_eased = ease_out_cubic(title_p)
+        self.title_sprite.center_y = self.title_start_y - (self.title_start_y - self.title_final_y) * title_eased
+
         if self.music_player is not None:
             try:
                 self.music_player.volume = MUSIC_VOLUME + (MUSIC_TARGET_VOLUME - MUSIC_VOLUME) * fade_eased
             except:
                 pass
 
-        # Update dos botões (usa dt para hover suave)
         for btn in self.buttons:
             btn.update(self.time, delta_time)
 
@@ -197,7 +210,7 @@ class MenuIntroView(arcade.View):
     def on_mouse_motion(self, x, y, dx, dy):
         for btn in self.buttons:
             cx = btn.sprite.center_x
-            fy = btn.final_y  # posição fixa, não animada!
+            fy = btn.final_y
             half_w = btn.sprite.width / 2
             half_h = btn.sprite.height / 2
 
@@ -217,10 +230,15 @@ class MenuIntroView(arcade.View):
             if (btn.sprite.left <= x <= btn.sprite.right and
                 btn.sprite.bottom <= y <= btn.sprite.top and
                 btn.sprite.alpha > 250):
-
                 print(f"Botão '{labels[i]}' clicado")
                 if labels[i] == "quit":
                     arcade.close_window()
+                elif labels[i] == "play":
+                    # Importa e inicia a cutscene
+                    from cutscene import CutsceneView
+                    cutscene = CutsceneView()
+                    cutscene.setup(self.music_player)
+                    self.window.show_view(cutscene)
 
 def main():
     window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE, resizable=False)
