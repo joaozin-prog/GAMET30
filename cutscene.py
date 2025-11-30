@@ -66,8 +66,9 @@ SKIP_TEXTS = [
     "Sua tarefa é localizar todos eles. Não deixe que a escuridão o distraia.",
     "A operação será encerrada apenas quando todos os itens forem recuperados.\nNão importa o que veja, o que escute ou o que julgue sentir atrás de você.",
     "Não interrompa o processo. Não compartilhe informações.",
-    "Os alvos identificados para esta sessão são: Item1, Item2, Item3, Item4 e Item5.\nCada objeto carrega vestígios do que aconteceu antes que você chegasse.",
-    "Bom, eu vou indo. Conto com você"
+    "Os alvos identificados para esta sessão são: Guarda-chuva, Fones de ouvido, Mochila, Tesoura e A̷̢̹̰̅r̴͈̥̟̪̂̈̋̄m̸̢͙͔̀̊͜a̵̢̨̧̛̻̝͐̉",
+    "Cada objeto carrega vestígios do que aconteceu antes que você chegasse.",
+    "Bom, eu vou indo. Conto com você."
 ]
 
 
