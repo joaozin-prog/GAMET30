@@ -9,7 +9,7 @@ SOUNDS_DIR = os.path.join(BASE_DIR, 'sounds')
 
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
-SCREEN_TITLE = "Game Menu Intro"
+SCREEN_TITLE = "Project IFFar"
 
 FADE_DELAY = 3.0
 
@@ -232,7 +232,7 @@ class MenuIntroView(arcade.View):
                 if labels[i] == "quit":
                     arcade.close_window()
                 elif labels[i] == "play":
-                    from cutscene import CutsceneView
+                    from cutscene_b import CutsceneView
                     cutscene = CutsceneView()
                     cutscene.setup(self.music_player)
                     self.window.show_view(cutscene)
