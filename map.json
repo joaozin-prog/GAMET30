@@ -15,23 +15,23 @@
     "arrows": {
       "left": {
         "target": "assets/phase1/porta_corredor.jpeg",
-        "x": 150,
-        "y": 360
+        "x": 300,
+        "y": 220
       },
       "up": {
         "target": "assets/phase1/entre_predios.jpeg",
-        "x": 640,
-        "y": 600
+        "x": 440,
+        "y": 300
       },
       "right": {
         "target": "assets/phase1/corredor_lab1.jpeg",
-        "x": 1150,
+        "x": 700,
         "y": 360
       },
       "down": {
         "target": "assets/phase1/entrada_info.jpeg",
         "x": 600,
-        "y": 200
+        "y": 150
       }
     }
   },
@@ -46,8 +46,8 @@
       },
       "down": {
         "target": "assets/phase1/hall_de_noite.jpeg",
-        "x": 600,
-        "y": 400
+        "x": 640,
+        "y": 200
       }
     }
   },
@@ -125,16 +125,27 @@
         "image": "assets/phase1/entre_predios.jpeg",
             "arrows": {
                 "up": {
-                    "trigger": "assets/phase1/jumpscare_entrada_predio2",
+                    "trigger": "jumpscare_entrada_predio2",
                     "x": 640,
                     "y": 600
                 },
                 "down": {
                     "target": "assets/phase1/hall_de_noite.jpeg",
-                    "x": 600,
-                    "y": 400
+                    "x": 640,
+                    "y": 200
                 }
             }
+    },
+
+        "entrada_predio2": {
+        "image": "assets/phase1/entrada_predio2.jpeg",
+        "arrows": {
+            "down": {
+                "target": "entre_predios",
+                "x": 640,
+                "y": 120
+            }
+        }
     },
 
     "jumpscare_entrada_predio2": {
@@ -145,9 +156,9 @@
         "assets/phase1/events_entrada_predio2/jump3.jpeg"
         ],
         
-        "sound": "assets/sounds/jump.flac",
-        "duration": 0.4,
-        "return": "assets/phase1/entrada_predio2.jpeg"
+        "sound": "assets/sounds/EAS.mp3",
+        "duration": 0.7,
+        "return": "entrada_predio2"
         }
     }
 

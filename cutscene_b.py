@@ -1,5 +1,6 @@
 import arcade
 import os
+from phase1 import Phase1View
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ASSETS_DIR = os.path.join(BASE_DIR, 'assets')
@@ -86,6 +87,8 @@ class CutsceneView(arcade.View):
     STATE_FADE_TO_BLACK = 0
     STATE_HOLD = 1
     STATE_FADE_FROM_BLACK = 2
+
+    STATE_FADE_OUT_TO_PHASE1 = 10
 
     STATE_WAIT_FOR_DANIEL = 3
     STATE_DANIEL_ENTRANCE = 4
@@ -430,7 +433,7 @@ class CutsceneView(arcade.View):
             self.black_sprite.alpha = int(255*(1-p))
 
             # Remover BG, Daniel, caixa
-            if p == 0:
+            if self.time == 0:
                 # Immediately clear visual lists and UI references so nothing lingers
                 self.bg_list = arcade.SpriteList()
                 self.daniel_list = arcade.SpriteList()
@@ -496,31 +499,89 @@ class CutsceneView(arcade.View):
         # ESTADO 11 — Fade preto + som do carro
         # -----------------------------------
         if self.state == self.STATE_FINAL_BLACK:
-            # ensure black fades in cleanly from transparent
-            # Use configured final fade time so timing is consistent
             p = min(self.time / FINAL_BLACK_FADE_TIME, 1)
             try:
                 self.black_sprite.alpha = int(255 * p)
             except Exception:
                 pass
 
-            # Play car sound immediately after the black fade completes
             if p >= 1 and not self._car_sound_played:
                 try:
-                    # Use defined car start sound constant if available
                     arcade.Sound(CAR_START_SOUND).play(volume=1.0)
                 except Exception:
                     try:
                         arcade.Sound(os.path.join(SOUNDS_DIR, "car_sound.mp3")).play(volume=1.0)
-                    except Exception:
+                    except:
                         pass
                 self._car_sound_played = True
-            # Optionally hold the final black for a short time before completing
+
             if p >= 1 and self.time >= (FINAL_BLACK_FADE_TIME + FINAL_BLACK_HOLD):
+                self.state = self.STATE_FADE_OUT_TO_PHASE1
+                self.time = 0
+                return
+            
+        # ----------------------------------------
+        # ESTADO FINAL — Fade preto + som do carro
+        # ----------------------------------------
+
+        if self.state == self.STATE_FINAL_BLACK:
+
+            # fade in para o preto
+            p = min(self.time / FINAL_BLACK_FADE_TIME, 1)
+            try:
+                self.black_sprite.alpha = int(255 * p)
+            except Exception:
+                pass
+
+            # toca o som do carro apenas uma vez, quando o fade termina
+            if p >= 1 and not self._car_sound_played:
                 try:
-                    self.state = self.STATE_COMPLETE
+                    arcade.Sound(CAR_START_SOUND).play(volume=1.0)
+                except Exception:
+                    try:
+                        arcade.Sound(os.path.join(SOUNDS_DIR, "car_sound.mp3")).play(volume=1.0)
+                    except:
+                        pass
+                self._car_sound_played = True
+
+            # quando fade + hold tiverem terminado → mudar de cena
+            if p >= 1 and self.time >= (FINAL_BLACK_FADE_TIME + FINAL_BLACK_HOLD):
+
+                # marca como concluído
+                self.state = self.STATE_COMPLETE
+
+                # remove blackscreen da cena antes de mudar de view
+                try:
+                    self.black_sprite.alpha = 0
+                    self.black_list = arcade.SpriteList()
                 except Exception:
                     pass
+
+                # troca para fase 1
+                #try:
+                    self.window.show_view(Phase1View(start_area='entrada_info'))
+                #except Exception as e:
+                    #print("Erro ao iniciar Phase1View")
+
+                return
+            
+        # -----------------------------------
+        # ESTADO 15 — Fade para preto e troca para phase1
+        # -----------------------------------
+        # No final da cutscene, no estado STATE_FADE_OUT_TO_PHASE1
+        if self.state == self.STATE_FADE_OUT_TO_PHASE1:
+            p = min(self.time / 1.5, 1)
+            self.black_sprite.alpha = int(255 * p)
+        
+            if p >= 1:
+                print("[CUTSCENE] Transição concluída. Redirecionando para Phase1View...")
+                try:
+                    # Redirecionar para Phase1View
+                    self.window.show_view(Phase1View(start_area='entrada_info'))
+                except Exception as e:
+                    print(f"[CUTSCENE] Erro ao redirecionar para Phase1View: {e}")
+                return
+
 
 
     def on_draw(self):
@@ -536,8 +597,6 @@ class CutsceneView(arcade.View):
         if len(self.dialog_list) > 0:
             self.dialog_list.draw()
 
-        # Draw dialog title & body text (typewriter visible text)
-        # Only draw the dialog texts if we haven't hidden them for the final sequence
         if (not getattr(self, "_hide_dialog_text", False)) and self.dialog_sprite is not None:
              try:
                  arcade.draw_text(
@@ -561,14 +620,11 @@ class CutsceneView(arcade.View):
              except Exception:
                  pass
 
-        # draw skip button if present
         if len(self.skip_list) > 0:
             self.skip_list.draw()
 
-        # draw black overlay on top of everything so it covers Daniel/back scene
         self.black_list.draw()
 
-    # helper to start typing a text
     def _start_typing(self, full_text: str):
         self._full_text = full_text
         self._visible_text = ""
@@ -577,22 +633,19 @@ class CutsceneView(arcade.View):
         self._typing = True
 
     def on_mouse_press(self, x: float, y: float, button: int, modifiers: int):
-        # If skip sprite exists, check click
         try:
             if self.skip_sprite and self.skip_sprite.collides_with_point((x, y)):
-                # If typing in progress, finish current text immediately
                 if self._typing:
                     self._typing = False
                     self._visible_text = self._full_text
                     self._type_pos = len(self._full_text)
                     return
-                # If current text fully shown, advance to next text (if any)
+                
                 next_index = self._current_text_index + 1
                 if next_index < len(SKIP_TEXTS):
                     self._current_text_index = next_index
                     self._start_typing(SKIP_TEXTS[self._current_text_index])
                 else:
-                    # no more texts: do nothing or you can implement closing dialog / continue
                     self._start_end_sequence()
         except Exception:
             pass
