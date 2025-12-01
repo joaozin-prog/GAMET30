@@ -1,0 +1,154 @@
+{
+  "entrada_info": {
+    "image": "assets/phase1/entrada_info.jpeg",
+    "arrows": {
+      "up": {
+        "target": "assets/phase1/hall_de_noite.jpeg",
+        "x": 600,
+        "y": 600
+      }
+    }
+  },
+
+  "hall_de_noite": {
+    "image": "assets/phase1/hall_de_noite.jpeg",
+    "arrows": {
+      "left": {
+        "target": "assets/phase1/porta_corredor.jpeg",
+        "x": 150,
+        "y": 360
+      },
+      "up": {
+        "target": "assets/phase1/entre_predios.jpeg",
+        "x": 640,
+        "y": 600
+      },
+      "right": {
+        "target": "assets/phase1/corredor_lab1.jpeg",
+        "x": 1150,
+        "y": 360
+      },
+      "down": {
+        "target": "assets/phase1/entrada_info.jpeg",
+        "x": 600,
+        "y": 400
+      }
+    }
+  },
+
+  "porta_corredor": {
+    "image": "assets/phase1/porta_corredor.jpeg",
+    "arrows": {
+      "up": {
+        "target": "assets/phase1/corredor_reunioes.jpeg",
+        "x": 640,
+        "y": 600
+      },
+      "down": {
+        "target": "assets/phase1/hall_de_noite.jpeg",
+        "x": 600,
+        "y": 400
+      }
+    }
+  },
+
+  "corredor_reunioes": {
+    "image": "assets/phase1/corredor_reunioes.jpeg",
+    "arrows": {
+      "left": {
+        "target": "assets/phase1/sala_profs.jpeg",
+        "x": 150,
+        "y": 360
+      },
+      "down": {
+        "target": "assets/phase1/porta_corredor.jpeg",
+        "x": 600,
+        "y": 400
+      }
+    }
+  },
+
+  "sala_profs": {
+    "image": "assets/phase1/sala_profs.jpeg",
+    "arrows": {
+      "left": {
+        "target": "assets/phase1/sala_reuniao_2.jpeg",
+        "x": 150,
+        "y": 360
+      },
+      "down": {
+        "target": "assets/phase1/corredor_reunioes.jpeg",
+        "x": 600,
+        "y": 400
+      }
+    }
+  },
+
+  "sala_reuniao_2": {
+    "image": "assets/phase1/sala_reuniao_2.jpeg",
+    "arrows": {
+      "up": {
+        "target": "assets/phase1/sala_reuniao.jpeg",
+        "x": 640,
+        "y": 600
+      },
+      "down": {
+        "target": "assets/phase1/sala_profs.jpeg",
+        "x": 600,
+        "y": 400
+      }
+    }
+  },
+    "sala_reuniao": {
+        "image": "assets/phase1/sala_reuniao.jpeg",
+        "arrows": {
+            "up": {
+                "target": "assets/phase1/sala_reuniao_2.jpeg",
+                "x": 600,
+                "y": 700
+            }
+        }
+    },
+
+    "corredor_lab1": {
+        "image": "assets/phase1/corredor_lab1.jpeg",
+        "arrows": {
+            "down": {
+                "target": "assets/phase1/hall_de_noite.jpeg",
+                "x": 600,
+                "y": 400
+            }
+        }
+    },
+
+    "entre_predios": {
+        "image": "assets/phase1/entre_predios.jpeg",
+            "arrows": {
+                "up": {
+                    "trigger": "assets/phase1/jumpscare_entrada_predio2",
+                    "x": 640,
+                    "y": 600
+                },
+                "down": {
+                    "target": "assets/phase1/hall_de_noite.jpeg",
+                    "x": 600,
+                    "y": 400
+                }
+            }
+    },
+
+    "jumpscare_entrada_predio2": {
+        "type": "sequence",
+        "frames": [
+        "assets/phase1/events_entrada_predio2/jump1.jpeg",
+        "assets/phase1/events_entrada_predio2/jump2.jpeg",
+        "assets/phase1/events_entrada_predio2/jump3.jpeg"
+        ],
+        
+        "sound": "assets/sounds/jump.flac",
+        "duration": 0.4,
+        "return": "assets/phase1/entrada_predio2.jpeg"
+        }
+    }
+
+

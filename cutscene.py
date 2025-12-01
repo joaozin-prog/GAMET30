@@ -431,10 +431,30 @@ class CutsceneView(arcade.View):
 
             # Remover BG, Daniel, caixa
             if p == 0:
+                # Immediately clear visual lists and UI references so nothing lingers
                 self.bg_list = arcade.SpriteList()
                 self.daniel_list = arcade.SpriteList()
                 self.dialog_list = arcade.SpriteList()
                 self.skip_list = arcade.SpriteList()
+                # Also clear individual sprite references and visible text so
+                # dialog text doesn't remain after the dialog box disappears.
+                try:
+                    self.dialog_sprite = None
+                except Exception:
+                    pass
+                try:
+                    self.skip_sprite = None
+                except Exception:
+                    pass
+                try:
+                    self.daniel_sprite = None
+                except Exception:
+                    pass
+                # Remove any visible text immediately
+                try:
+                    self._visible_text = ""
+                except Exception:
+                    pass
 
             if p >= 1:
                 self.state = self.STATE_DANIEL_BACK_SCENE
@@ -461,7 +481,14 @@ class CutsceneView(arcade.View):
         # ESTADO 10 — Cena final com daniel costas
         # -----------------------------------
         if self.state == self.STATE_DANIEL_BACK_SCENE:
-            if self.time >= 4:
+            # After Daniel (back) has been visible for 3 seconds,
+            # start the final black fade so it appears shortly before the car sound.
+            if self.time >= 3:
+                # Ensure the black sprite starts transparent before fading in
+                try:
+                    self.black_sprite.alpha = 0
+                except Exception:
+                    pass
                 self.state = self.STATE_FINAL_BLACK
                 self.time = 0
 
@@ -470,19 +497,30 @@ class CutsceneView(arcade.View):
         # -----------------------------------
         if self.state == self.STATE_FINAL_BLACK:
             # ensure black fades in cleanly from transparent
-            p = min(self.time / 1.8, 1)
+            # Use configured final fade time so timing is consistent
+            p = min(self.time / FINAL_BLACK_FADE_TIME, 1)
             try:
                 self.black_sprite.alpha = int(255 * p)
             except Exception:
                 pass
 
-            # Play car sound 3 seconds after the black fade started (once)
-            if self.time >= 3.0 and not self._car_sound_played:
+            # Play car sound immediately after the black fade completes
+            if p >= 1 and not self._car_sound_played:
                 try:
-                    arcade.Sound(os.path.join(SOUNDS_DIR, "car_sound.mp3")).play(volume=1.0)
+                    # Use defined car start sound constant if available
+                    arcade.Sound(CAR_START_SOUND).play(volume=1.0)
+                except Exception:
+                    try:
+                        arcade.Sound(os.path.join(SOUNDS_DIR, "car_sound.mp3")).play(volume=1.0)
+                    except Exception:
+                        pass
+                self._car_sound_played = True
+            # Optionally hold the final black for a short time before completing
+            if p >= 1 and self.time >= (FINAL_BLACK_FADE_TIME + FINAL_BLACK_HOLD):
+                try:
+                    self.state = self.STATE_COMPLETE
                 except Exception:
                     pass
-                self._car_sound_played = True
 
 
     def on_draw(self):
@@ -492,10 +530,7 @@ class CutsceneView(arcade.View):
         if self.state >= self.STATE_FADE_FROM_BLACK:
             self.bg_list.draw()
 
-        # draw black overlay via its SpriteList
-        self.black_list.draw()
-
-        # draw Daniel and dialog if present
+        # draw Daniel and dialog if present (black overlay will be drawn last)
         if len(self.daniel_list) > 0:
             self.daniel_list.draw()
         if len(self.dialog_list) > 0:
@@ -529,6 +564,9 @@ class CutsceneView(arcade.View):
         # draw skip button if present
         if len(self.skip_list) > 0:
             self.skip_list.draw()
+
+        # draw black overlay on top of everything so it covers Daniel/back scene
+        self.black_list.draw()
 
     # helper to start typing a text
     def _start_typing(self, full_text: str):
