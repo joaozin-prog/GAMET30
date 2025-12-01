@@ -166,7 +166,6 @@ class MenuIntroView(arcade.View):
         for btn in self.buttons:
             self.ui_list.append(btn.sprite)
 
-        # Music
         if os.path.exists(MUSIC_FILE):
             try:
                 self.music_sound = arcade.load_sound(MUSIC_FILE, streaming=True)
