@@ -5,7 +5,7 @@
       "up": {
         "target": "assets/phase1/hall_de_noite.jpeg",
         "x": 600,
-        "y": 600
+        "y": 400
       }
     }
   },
@@ -31,7 +31,7 @@
       "down": {
         "target": "assets/phase1/entrada_info.jpeg",
         "x": 600,
-        "y": 400
+        "y": 200
       }
     }
   },
