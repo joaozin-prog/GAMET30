@@ -41,6 +41,8 @@ DIALOG_POST_APPEAR_DELAY = 2.0  # seconds
 # Typewriter / dialog configuration (you can tweak these)
 LETTER_INTERVAL_MS = 50                     # milliseconds per letter (variable you can adjust)
 
+ESTACIONAMENTO_IMG = os.path.join(ASSETS_DIR, "estacionamento.jpeg")
+
 # Dialog title properties
 DIALOG_TITLE = "Daniel Temp"
 DIALOG_TITLE_X = 160                        # adjust X of title text (pixels)
@@ -56,7 +58,7 @@ DIALOG_TEXT_FONT_SIZE = 18                  # font size for dialog body
 SKIP_BUTTON_X = 1150
 SKIP_BUTTON_Y = 120
 
-DANIEL_BACK_IMG = os.path.join(ASSETS_DIR, "daniel_back.png")
+# DANIEL_BACK_IMG = os.path.join(ASSETS_DIR, "daniel_back.png")
 CAR_START_SOUND = os.path.join(SOUNDS_DIR, "car_start.mp3")
 
 FINAL_BLACK_FADE_TIME = 2.0
@@ -109,6 +111,8 @@ class CutsceneView(arcade.View):
         super().__init__()
         self.time = 0
         self.state = self.STATE_FADE_TO_BLACK
+
+        self.estacionamento_list = arcade.SpriteList()
 
         self.bg_sprite = arcade.Sprite(ENTRADA_INFO_IMG)
         self.bg_sprite.center_x = SCREEN_WIDTH // 2
@@ -496,15 +500,28 @@ class CutsceneView(arcade.View):
                 self.time = 0
 
         # -----------------------------------
-        # ESTADO 11 — Fade preto + som do carro
+        # ESTADO 11 — Fade do estacionamento + som do carro
         # -----------------------------------
         if self.state == self.STATE_FINAL_BLACK:
-            p = min(self.time / FINAL_BLACK_FADE_TIME, 1)
-            try:
-                self.black_sprite.alpha = int(255 * p)
-            except Exception:
-                pass
 
+            # --- primeira vez: cria o sprite do estacionamento ---
+            if self.time == 0:
+                # limpa listas anteriores
+                self.black_list      = arcade.SpriteList()
+                self.estacionamento_list = arcade.SpriteList()
+
+                est_sprite = arcade.Sprite(ESTACIONAMENTO_IMG)
+                est_sprite.center_x = SCREEN_WIDTH // 2
+                est_sprite.center_y = SCREEN_HEIGHT // 2
+                est_sprite.alpha = 0          # começa invisível
+                self.estacionamento_list.append(est_sprite)
+
+            # --- fade-in do estacionamento ---
+            p = min(self.time / FINAL_BLACK_FADE_TIME, 1)
+            if self.estacionamento_list:
+                self.estacionamento_list[0].alpha = int(255 * p)
+
+            # --- som do carro (mesmo de antes) ---
             if p >= 1 and not self._car_sound_played:
                 try:
                     arcade.Sound(CAR_START_SOUND).play(volume=1.0)
@@ -515,10 +532,12 @@ class CutsceneView(arcade.View):
                         pass
                 self._car_sound_played = True
 
+            # --- transição para phase1 após hold ---
             if p >= 1 and self.time >= (FINAL_BLACK_FADE_TIME + FINAL_BLACK_HOLD):
                 self.state = self.STATE_FADE_OUT_TO_PHASE1
                 self.time = 0
                 return
+
             
         # ----------------------------------------
         # ESTADO FINAL — Fade preto + som do carro
@@ -587,42 +606,41 @@ class CutsceneView(arcade.View):
     def on_draw(self):
         self.clear()
 
-        # Draw background once we are revealing it and afterwards
-        if self.state >= self.STATE_FADE_FROM_BLACK:
+        # 1º) fundo correto para cada momento
+        if self.state >= self.STATE_FINAL_BLACK:          # cena do estacionamento
+            self.estacionamento_list.draw()
+        elif self.state >= self.STATE_FADE_FROM_BLACK:    # entrada_info normal
             self.bg_list.draw()
 
-        # draw Daniel and dialog if present (black overlay will be drawn last)
+        # 2º) personagens / UI
         if len(self.daniel_list) > 0:
             self.daniel_list.draw()
         if len(self.dialog_list) > 0:
             self.dialog_list.draw()
-
-        if (not getattr(self, "_hide_dialog_text", False)) and self.dialog_sprite is not None:
-             try:
-                 arcade.draw_text(
-                     DIALOG_TITLE,
-                     DIALOG_TITLE_X,
-                     DIALOG_TITLE_Y,
-                     arcade.color.WHITE,
-                     DIALOG_TITLE_FONT_SIZE,
-                     anchor_x="left",
-                 )
-                 arcade.draw_text(
-                     self._visible_text,
-                     DIALOG_TEXT_X,
-                     DIALOG_TEXT_Y,
-                     arcade.color.WHITE,
-                     DIALOG_TEXT_FONT_SIZE,
-                     multiline=True,
-                     width=SCREEN_WIDTH - (DIALOG_TEXT_X + 40),
-                     anchor_x="left",
-                 )
-             except Exception:
-                 pass
-
         if len(self.skip_list) > 0:
             self.skip_list.draw()
 
+        # 3º) texto da caixa de diálogo (se houver)
+        if (not getattr(self, "_hide_dialog_text", False)) and self.dialog_sprite is not None:
+            try:
+                arcade.draw_text(
+                    DIALOG_TITLE,
+                    DIALOG_TITLE_X, DIALOG_TITLE_Y,
+                    arcade.color.WHITE, DIALOG_TITLE_FONT_SIZE,
+                    anchor_x="left"
+                )
+                arcade.draw_text(
+                    self._visible_text,
+                    DIALOG_TEXT_X, DIALOG_TEXT_Y,
+                    arcade.color.WHITE, DIALOG_TEXT_FONT_SIZE,
+                    multiline=True,
+                    width=SCREEN_WIDTH - (DIALOG_TEXT_X + 40),
+                    anchor_x="left"
+                )
+            except Exception:
+                pass
+
+        # 4º) overlay preto (fade-outs, etc.)
         self.black_list.draw()
 
     def _start_typing(self, full_text: str):

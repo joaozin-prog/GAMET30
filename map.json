@@ -57,13 +57,13 @@
     "arrows": {
       "left": {
         "target": "assets/phase1/sala_profs.jpeg",
-        "x": 150,
+        "x": 400,
         "y": 360
       },
       "down": {
         "target": "assets/phase1/porta_corredor.jpeg",
         "x": 600,
-        "y": 400
+        "y": 200
       }
     }
   },
@@ -73,13 +73,13 @@
     "arrows": {
       "left": {
         "target": "assets/phase1/sala_reuniao_2.jpeg",
-        "x": 150,
+        "x": 200,
         "y": 360
       },
       "down": {
         "target": "assets/phase1/corredor_reunioes.jpeg",
         "x": 600,
-        "y": 400
+        "y": 200
       }
     }
   },
@@ -94,8 +94,8 @@
       },
       "down": {
         "target": "assets/phase1/sala_profs.jpeg",
-        "x": 600,
-        "y": 400
+        "x": 640,
+        "y": 200
       }
     }
   },
@@ -104,10 +104,19 @@
         "arrows": {
             "up": {
                 "target": "assets/phase1/sala_reuniao_2.jpeg",
-                "x": 600,
-                "y": 700
+                "x": 640,
+                "y": 450
             }
-        }
+        },
+
+        
+      "items": {
+          "mochila": {
+              "image": "assets/phase1/items/mochila.png",
+              "x": 500,
+              "y": 400
+          }
+      }
     },
 
     "corredor_lab1": {
@@ -125,7 +134,7 @@
         "image": "assets/phase1/entre_predios.jpeg",
             "arrows": {
                 "up": {
-                    "trigger": "jumpscare_entrada_predio2",
+                    "target": "assets/phase1/jump1.jpeg",
                     "x": 640,
                     "y": 600
                 },
@@ -141,25 +150,12 @@
         "image": "assets/phase1/entrada_predio2.jpeg",
         "arrows": {
             "down": {
-                "target": "entre_predios",
+                "target": "assets/phase1/entre_predios.jpeg",
                 "x": 640,
                 "y": 120
             }
         }
-    },
-
-    "jumpscare_entrada_predio2": {
-        "type": "sequence",
-        "frames": [
-        "assets/phase1/events_entrada_predio2/jump1.jpeg",
-        "assets/phase1/events_entrada_predio2/jump2.jpeg",
-        "assets/phase1/events_entrada_predio2/jump3.jpeg"
-        ],
-        
-        "sound": "assets/sounds/EAS.mp3",
-        "duration": 0.7,
-        "return": "entrada_predio2"
-        }
     }
+}
 
 
